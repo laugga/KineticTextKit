@@ -31,7 +31,7 @@ class ViewController : UIViewController {
         textLayer.text = "2.8"
         textLayer.font = font
         textLayer.textColor = .black
-        textLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        //textLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         
         view.layer.addSublayer(textLayer)
         self.view = view

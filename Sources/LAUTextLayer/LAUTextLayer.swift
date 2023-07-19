@@ -25,20 +25,21 @@ public class LAUTextLayer: CAShapeLayer {
         }
     }
     
+    public var contentMode: UIView.ContentMode = .center {
+        didSet {
+            updatePath()
+        }
+    }
+    
     private var previousPath: CGPath?
     
     public func setFont(_ font: UIFont, animated: Bool) {
         print("setFont \(font) animated \(animated)")
-        guard let text = text, let oldPath = previousPath, let newPath = createTextPath(text: text, font: font) else {
-            return
-        }
-        if animated {
+        self.font = font
+        
+        if let oldPath = previousPath, let newPath = path, animated {
             let animation = createAnimation(from: oldPath, to: newPath)
             add(animation, forKey: "path")
-            previousPath = newPath
-        } else {
-            path = newPath
-            previousPath = path
         }
     }
     
@@ -52,12 +53,12 @@ public class LAUTextLayer: CAShapeLayer {
     }
     
     private func updatePath() {
-        print("updatePath")
         guard let text = text, let font = font else {
             return
         }
-        path = createTextPath(text: text, font: font)
         previousPath = path
+        path = createTextPath(text: text, font: font)
+        print("updated path")
     }
     
     private func updateFillColor() {
@@ -122,14 +123,28 @@ public class LAUTextLayer: CAShapeLayer {
                 
                 if let letterPath = CTFontCreatePathForGlyph(font, glyph, nil) {
                     let transform = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: position.x, ty: position.y)
-                
                     textPath.addPath(letterPath, transform: transform)
                 }
             }
         }
         
-        containerPath.addPath(textPath, transform: .identity)
+        let transform = contentModeTransform(textPath: textPath)
+        print("transform \(transform)")
+        containerPath.addPath(textPath, transform: transform)
    
         return containerPath
+    }
+    
+    private func contentModeTransform(textPath: CGPath) -> CGAffineTransform {
+        switch contentMode {
+        case .center:
+            return .init(translationX: 0, y: textPath.boundingBox.height + (frame.size.height-textPath.boundingBox.height)/2)
+        case .topLeft:
+            return .init(translationX: 0, y: textPath.boundingBox.height)
+        case .bottomLeft:
+            return .init(translationX: 0, y: frame.size.height)
+        default:
+            return .identity // TODO other cases
+        }
     }
 }

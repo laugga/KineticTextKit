@@ -6,5 +6,6 @@
         <page name='SwiftUI'/>
         <page name='UIKit Dynamics'/>
         <page name='Core Animation Sample'/>
+        <page name='LAUSwitch'/>
     </pages>
 </playground>
