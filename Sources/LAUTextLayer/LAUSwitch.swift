@@ -21,9 +21,7 @@ import UIKit
     private func commonInit() {
         backgroundColor = .clear
         addTextLayers()
-        updateFrame()
-        updateTitle()
-        updateStyle()
+        updateContent()
     }
     
     // MARK: - Setting the on/off state
@@ -54,9 +52,7 @@ import UIKit
     
     open var configuration: Configuration = .defaultConfiguration {
         didSet {
-            updateFrame()
-            updateTitle()
-            updateStyle()
+            updateContent()
         }
     }
     
@@ -82,25 +78,15 @@ import UIKit
         }
         
         public struct Style {
-            let isOn: SwitchState
-            let isOff: SwitchState
+            let enabled: TitleStyle
+            let disabled: TitleStyle
             
-            public init(isOn: LAUSwitch.Configuration.Style.SwitchState, isOff: LAUSwitch.Configuration.Style.SwitchState) {
-                self.isOn = isOn
-                self.isOff = isOff
+            public init(enabled: LAUSwitch.Configuration.Style.TitleStyle, disabled: LAUSwitch.Configuration.Style.TitleStyle) {
+                self.enabled = enabled
+                self.disabled = disabled
             }
             
-            public struct SwitchState {
-                let on: TitleState
-                let off: TitleState
-                
-                public init(on: LAUSwitch.Configuration.Style.TitleState, off: LAUSwitch.Configuration.Style.TitleState) {
-                    self.on = on
-                    self.off = off
-                }
-            }
-            
-            public struct TitleState {
+            public struct TitleStyle {
                 let font: UIFont
                 let color: UIColor
                 
@@ -110,10 +96,8 @@ import UIKit
                 }
             }
             
-            fileprivate static let defaultStyle: Style = .init(isOn: .init(on: .init(font: .systemFont(ofSize: 30), color: .black),
-                                                                           off: .init(font: .systemFont(ofSize: 22), color: .black.withAlphaComponent(0.5))),
-                                                               isOff: .init(on: .init(font: .systemFont(ofSize: 22), color: .black.withAlphaComponent(0.5)),
-                                                                            off: .init(font: .systemFont(ofSize: 30), color: .black)))
+            fileprivate static let defaultStyle: Style = .init(enabled: .init(font: .systemFont(ofSize: 30), color: .black),
+                                                               disabled: .init(font: .systemFont(ofSize: 22), color: .black.withAlphaComponent(0.5)))
         }
         
         fileprivate static let defaultConfiguration: Configuration = .init(title: .defaultTitle, style: .defaultStyle)
@@ -131,51 +115,108 @@ import UIKit
         onLayer.contentMode = .bottomLeft
     }
     
+    private func updateContent() {
+        updateTextLayersFrames()
+        updateTitle()
+        updateStyle()
+        invalidateIntrinsicContentSize()
+    }
+    
     private func updateTitle() {
         onLayer.text = configuration.title.on
         offLayer.text = configuration.title.off
     }
     
     private func updateStyle(animated: Bool = false) {
-        onLayer.textColor = switchState.on.color
-        offLayer.textColor = switchState.off.color
-        onLayer.setFont(switchState.on.font, animated: animated)
-        offLayer.setFont(switchState.off.font, animated: animated)
+        onLayer.textColor = switchState.onLayer.color
+        offLayer.textColor = switchState.offLayer.color
+        onLayer.setFont(switchState.onLayer.font, animated: animated)
+        offLayer.setFont(switchState.offLayer.font, animated: animated)
     }
     
-    private var switchState: Configuration.Style.SwitchState {
+    private struct SwitchState {
+        let onLayer: Configuration.Style.TitleStyle
+        let offLayer: Configuration.Style.TitleStyle
+    }
+    
+    private var switchState: SwitchState {
         switch isOn {
         case true:
-            return configuration.style.isOn
+            return .init(onLayer: configuration.style.enabled,
+                         offLayer: configuration.style.disabled)
         case false:
-            return configuration.style.isOff
+            return .init(onLayer: configuration.style.disabled,
+                         offLayer: configuration.style.enabled)
         }
     }
     
-    private func updateFrame() {
-        let textLayersBounds = calculateTextLayersBounds(title: configuration.title, state: switchState)
-        frame = CGRect(origin: .zero, size: textLayersBounds)
-        onLayer.frame = frame
-        offLayer.frame = frame
+    // MARK: - Intrinsic Content Size
+    
+    public override var intrinsicContentSize: CGSize {
+        return calculateTextLayersBounds(title: configuration.title, state: switchState)
     }
     
-    private func calculateTextLayersBounds(title: Configuration.Title, state: Configuration.Style.SwitchState) -> CGSize {
-        
-        let onAttributes: [NSAttributedString.Key: Any] = [NSAttributedString.Key.font: state.on.font]
-        let onBoundingRect = NSString(string: title.on).boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude), options: .usesDeviceMetrics, attributes: onAttributes, context: nil)
-        let onStringSize = CGSize(width: ceil(onBoundingRect.width), height: ceil(onBoundingRect.height))
-        
-        let offAttributes: [NSAttributedString.Key: Any] = [NSAttributedString.Key.font: state.off.font]
-        let offBoundingRect = NSString(string: title.off).boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude), options: .usesDeviceMetrics, attributes: offAttributes, context: nil)
-        let offStringSize = CGSize(width: ceil(offBoundingRect.width), height: ceil(offBoundingRect.height))
-        
+    private func updateTextLayersFrames() {
+        let bounds = calculateTextLayersBounds(title: configuration.title, state: switchState)
+        onLayer.frame = .init(origin: .zero, size: bounds)
+        offLayer.frame = .init(origin: .zero, size: bounds)
+    }
+    
+    private func calculateTextLayersBounds(title: Configuration.Title, state: SwitchState) -> CGSize {
+        let onLayerSize = sizeThatFits(title.on, font: state.onLayer.font)
+        print("onLayerSize \(onLayerSize)")
+        let offLayerSize = sizeThatFits(title.off, font: state.offLayer.font)
+        print("offLayerSize \(offLayerSize)")
         let spacing: CGFloat = 4
-        return .init(width: max(onStringSize.width, offStringSize.width), height: onStringSize.height+spacing+offStringSize.height)
+        return .init(width: max(onLayerSize.width, offLayerSize.width), height: onLayerSize.height+spacing+offLayerSize.height)
+    }
+    
+    private func sizeThatFits(_ text: String, font: UIFont) -> CGSize {
+        let attributes: [NSAttributedString.Key: Any] = [NSAttributedString.Key.font: font]
+        let boundingRect = text.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude), options: .usesDeviceMetrics, attributes: attributes, context: nil).size
+        let size = CGSize(width: ceil(boundingRect.width), height: ceil(boundingRect.height))
+        return size
     }
     
     // MARK: - Interaction
     
-    override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        setOn(!isOn, animated: true)
+    public override func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        let shouldBegin = super.beginTracking(touch, with: event)
+        return shouldBegin
+    }
+    
+    public override func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        let shouldContinue = super.continueTracking(touch, with: event)
+        
+        // Check if the touch is still inside the control's bounds
+        if bounds.contains(touch.location(in: self)) {
+            // Handle touch continuation, if needed
+        } else {
+            // Handle touch moved outside the control, if needed
+        }
+        
+        return shouldContinue
+    }
+    
+    public override func endTracking(_ touch: UITouch?, with event: UIEvent?) {
+        super.endTracking(touch, with: event)
+        
+        if let touch = touch, bounds.contains(touch.location(in: self)) {
+            // sendActions(for: .touchUpInside)
+            setOn(!isOn, animated: true)
+            HapticFeedbackPlayer.shared.play(style: .light) // TODO check impact on thread and ui change for perceived response
+        } else {
+            // sendActions(for: .touchUpOutside)
+        }
+    }
+    
+    public override func cancelTracking(with event: UIEvent?) {
+        super.cancelTracking(with: event)
     }
 }
+
+//@available(iOS 17.0, *)
+//#Preview {
+//    let lauswitch = LAUSwitch()
+//    return lauswitch
+//}

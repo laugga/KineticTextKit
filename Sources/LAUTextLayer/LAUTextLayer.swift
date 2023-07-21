@@ -138,11 +138,11 @@ public class LAUTextLayer: CAShapeLayer {
     private func contentModeTransform(textPath: CGPath) -> CGAffineTransform {
         switch contentMode {
         case .center:
-            return .init(translationX: 0, y: textPath.boundingBox.height + (frame.size.height-textPath.boundingBox.height)/2)
+            return .init(translationX: 0, y: textPath.boundingBox.height + (frame.size.height-textPath.boundingBox.height)/2)  // FIXME will not work if frame is not set
         case .topLeft:
             return .init(translationX: 0, y: textPath.boundingBox.height)
         case .bottomLeft:
-            return .init(translationX: 0, y: frame.size.height)
+            return .init(translationX: 0, y: frame.size.height) // FIXME will not work if frame is not set
         default:
             return .identity // TODO other cases
         }

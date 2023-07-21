@@ -36,15 +36,16 @@ class Handler: NSObject {
 
 
 Task { @MainActor in
-    toggleSwitch.configuration = .init(title: .init(on: "FRONT", off: "BACK"),
-                                       style: .init(isOn: .init(on: .init(font: .systemFont(ofSize: 30),
-                                                                          color: .black),
-                                                                off: .init(font: .systemFont(ofSize: 22),
-                                                                           color: .black.withAlphaComponent(0.5))),
-                                                    isOff: .init(on: .init(font: .systemFont(ofSize: 22),
-                                                                           color: .black.withAlphaComponent(0.5)),
-                                                                 off: .init(font: .systemFont(ofSize: 30),
-                                                                            color: .black))))
+    
+    toggleSwitch.setNeedsLayout()
+    let enabledStyle = LAUSwitch.Configuration.Style.TitleStyle(font: .systemFont(ofSize: 30), color: .black)
+    let disabledStyle = LAUSwitch.Configuration.Style.TitleStyle(font: .systemFont(ofSize: 28), color: .black.withAlphaComponent(0.5))
+    
+    toggleSwitch.configuration = .init(title: .init(on: "FRONT",
+                                                    off: "BACK"),
+                                       style: .init(enabled: enabledStyle,
+                                                    disabled: disabledStyle))
+    
     PlaygroundPage.current.liveView = toggleSwitch
 }
 
