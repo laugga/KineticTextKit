@@ -1,9 +1,9 @@
 import UIKit
 
-public class LAUTextLayer: CAShapeLayer {
+public class KineticTextLayer: CAShapeLayer {
     
     public override init(layer: Any) {
-        print("LAUTextLayer init layer \(layer)")
+        print("KineticTextLayer init layer \(layer)")
         super.init(layer: layer)
     }
     
@@ -45,7 +45,7 @@ public class LAUTextLayer: CAShapeLayer {
     
     override public init() {
         super.init()
-        print("LAUTextLayer init")
+        print("KineticTextLayer init")
     }
     
     required init?(coder: NSCoder) {

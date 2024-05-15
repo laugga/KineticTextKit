@@ -1,12 +1,12 @@
 import XCTest
-@testable import LAUTextLayer
+@testable import KineticTextKit
 
-final class LAUTextLayerTests: XCTestCase {
+final class KineticTextLayerTests: XCTestCase {
 
     func testExample() throws {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        XCTAssertEqual(LAUTextLayer().text, "Hello, World!")
+        XCTAssertEqual(KineticTextLayer().text, "Hello, World!")
     }
 }

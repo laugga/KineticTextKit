@@ -2,7 +2,7 @@
 
 import Foundation
 import PlaygroundSupport
-import LAUTextLayer
+import KineticTextKit
 import Combine
 
 let toggleSwitch = LAUSwitch()

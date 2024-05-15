@@ -105,8 +105,8 @@ import UIKit
     
     // MARK: - Private
     
-    private let onLayer = LAUTextLayer()
-    private let offLayer = LAUTextLayer()
+    private let onLayer = KineticTextLayer()
+    private let offLayer = KineticTextLayer()
     
     private func addTextLayers() {
         layer.addSublayer(onLayer)

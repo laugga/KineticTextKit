@@ -1,5 +1,5 @@
 import XCTest
-@testable import LAUTextLayer
+@testable import KineticTextKit
 
 @available(iOS 14.0, *)
 final class LAULabelTests: XCTestCase {
