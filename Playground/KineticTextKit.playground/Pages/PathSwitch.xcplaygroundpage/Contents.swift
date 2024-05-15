@@ -2,7 +2,7 @@
 
 import PlaygroundSupport
 import UIKit
-import LAUTextLayer
+import KineticTextKit
 
 class ViewController : UIViewController {
     

@@ -2,7 +2,7 @@ import UIKit
 
 public class LAUTextView: UIView {
     
-    public let textLayer = LAUTextLayer()
+    public let textLayer = KineticTextLayer()
     
     override public init(frame: CGRect) {
         super.init(frame: frame)

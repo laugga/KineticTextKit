@@ -1,7 +1,7 @@
 //: [Previous](@previous)
 
 import SwiftUI
-import LAUTextLayer
+import KineticTextKit
 import PlaygroundSupport
 
 struct ContentView: View {

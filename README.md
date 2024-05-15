@@ -1,1 +1,1 @@
-# LAUTextLayer
+# KineticTextKit

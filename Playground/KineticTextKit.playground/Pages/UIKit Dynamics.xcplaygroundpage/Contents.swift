@@ -2,15 +2,15 @@
 
 import PlaygroundSupport
 import UIKit
-import LAUTextLayer
+import KineticTextKit
 
 class ViewController : UIViewController {
     
-    lazy var textLayerA = LAUTextLayer()
-    var textLayerDynamicItemA: LAUTextLayerDynamicItem?
+    lazy var textLayerA = KineticTextLayer()
+    var textLayerDynamicItemA: KineticTextKitDynamicItem?
     
-    lazy var textLayerB = LAUTextLayer()
-    var textLayerDynamicItemB: LAUTextLayerDynamicItem?
+    lazy var textLayerB = KineticTextLayer()
+    var textLayerDynamicItemB: KineticTextKitDynamicItem?
     
     lazy var button: UIButton =
     {

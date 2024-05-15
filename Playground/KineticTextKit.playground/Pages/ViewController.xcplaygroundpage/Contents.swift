@@ -2,13 +2,13 @@
 
 import PlaygroundSupport
 import UIKit
-import LAUTextLayer
+import KineticTextKit
 
 class ViewController : UIViewController {
     
     var font: UIFont = .systemFont(ofSize: 15, weight: .semibold)
     
-    let textLayer = LAUTextLayer()
+    let textLayer = KineticTextLayer()
     
     let fontPointSizeSlider = UISlider(frame: .init(x: 10, y: 10, width: 100, height: 100))
     
