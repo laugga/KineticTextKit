@@ -424,11 +424,9 @@ public enum LAUPathSwitchToggleState: Int, CaseIterable {
     public var toggleState: LAUPathSwitchToggleState = .none
     
     public func setToggle(state: LAUPathSwitchToggleState, animated: Bool) {
-        print("setToggle \(toggleState) -> \(state)")
         toggleState = state
         let newPath = state.path
         if let oldPath = shapeLayer.path, animated {
-            print("animated")
             let animation = createAnimation(from: oldPath, to: newPath)
             shapeLayer.add(animation, forKey: "path")
         } else {
