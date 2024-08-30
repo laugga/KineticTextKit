@@ -3,7 +3,6 @@ import UIKit
 public class KineticTextLayer: CAShapeLayer {
     
     public override init(layer: Any) {
-        print("KineticTextLayer init layer \(layer)")
         super.init(layer: layer)
     }
     
@@ -34,7 +33,6 @@ public class KineticTextLayer: CAShapeLayer {
     private var previousPath: CGPath?
     
     public func setFont(_ font: UIFont, animated: Bool) {
-        print("setFont \(font) animated \(animated)")
         self.font = font
         
         if let oldPath = previousPath, let newPath = path, animated {
@@ -45,7 +43,6 @@ public class KineticTextLayer: CAShapeLayer {
     
     override public init() {
         super.init()
-        print("KineticTextLayer init")
     }
     
     required init?(coder: NSCoder) {
@@ -58,7 +55,6 @@ public class KineticTextLayer: CAShapeLayer {
         }
         previousPath = path
         path = createTextPath(text: text, font: font)
-        print("updated path")
     }
     
     private func updateFillColor() {
@@ -71,7 +67,6 @@ public class KineticTextLayer: CAShapeLayer {
     // MARK: - Helpers
     
     private func createAnimation(from: CGPath, to: CGPath) -> CABasicAnimation {
-        print("createAnimation")
         let animation = CABasicAnimation(keyPath: "path")
         animation.fromValue = from
         animation.toValue = to
@@ -129,7 +124,6 @@ public class KineticTextLayer: CAShapeLayer {
         }
         
         let transform = contentModeTransform(textPath: textPath)
-        print("transform \(transform)")
         containerPath.addPath(textPath, transform: transform)
    
         return containerPath

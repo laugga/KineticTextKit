@@ -164,9 +164,7 @@ import UIKit
     
     private func calculateTextLayersBounds(title: Configuration.Title, state: SwitchState) -> CGSize {
         let onLayerSize = sizeThatFits(title.on, font: state.onLayer.font)
-        print("onLayerSize \(onLayerSize)")
         let offLayerSize = sizeThatFits(title.off, font: state.offLayer.font)
-        print("offLayerSize \(offLayerSize)")
         let spacing: CGFloat = 4
         return .init(width: max(onLayerSize.width, offLayerSize.width), height: onLayerSize.height+spacing+offLayerSize.height)
     }
