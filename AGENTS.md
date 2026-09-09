@@ -1,0 +1,187 @@
+# AGENTS.md
+
+Guidance for AI coding agents (Claude, Codex, and others) and human
+contributors working in this repository. Read this before making changes.
+
+This file covers **this repository**: how to build it, how it is laid out, and
+what will bite you. How work reaches it — which task an agent picks up, when a
+task is ready, and what happens after review — lives in
+[`laugga/ops`](https://github.com/laugga/ops), which serves every repository
+and is where those rules are changed.
+
+## What this is
+
+**KineticTextKit** is a Swift text-animation kit: a `CAShapeLayer` subclass
+that renders text as a bezier path and animates between strings, fonts and
+weights, plus the UIKit controls built on top of it. Swift + UIKit, packaged
+with Swift Package Manager (`Package.swift`, swift-tools-version 5.7). It has
+**no dependencies of its own**.
+
+**What depends on it:** [`laugga/lightmate-app-ios`](https://github.com/laugga/lightmate-app-ios),
+the Lightmate iOS app, consumes it as a Swift package. See the branch-pinning
+gotcha below — it is the single most important thing to know before merging
+here.
+
+The public surface is small:
+
+| Type | What it is |
+|---|---|
+| `KineticTextLayer` | `CAShapeLayer` that draws text as a path; animates `text`, `font`. |
+| `LAUTextView` | `UIView` wrapper hosting a `KineticTextLayer`. |
+| `LAULabel` | SwiftUI `UIViewRepresentable` over the text view (iOS 14+). |
+| `LAUSwitch` | `UIControl` toggle with animated text titles. |
+| `LAUPathSwitch` | Path-morphing toggle (`LAUPathSwitchToggleState`). |
+| `KineticTextKitDynamicItem` | `UIDynamicItem` adapter, for UIKit Dynamics. |
+
+## Build and test
+
+Use the `Makefile` targets — they wrap the correct `xcodebuild` invocations so
+everyone runs the same known-good commands. Run them from the repo root.
+
+```bash
+make build   # compile for the simulator
+make test    # run unit tests on a simulator (auto-picks newest iPhone)
+make clean   # xcodebuild clean, and remove .build
+```
+
+Both were verified from a clean checkout of `main`. Notes:
+
+- **`swift build` and `swift test` do not work here, and are not meant to.**
+  Every source file imports UIKit, so a host-macOS SwiftPM build fails with
+  `error: no such module 'UIKit'`. It is not a broken checkout — build through
+  `xcodebuild` with an iOS Simulator destination, which is what the Makefile
+  does. Do not add `#if canImport(UIKit)` guards or a macOS platform just to
+  make `swift build` pass.
+- **Builds use a generic simulator destination**; tests need a concrete device
+  and the Makefile selects the newest available iPhone at runtime. Override
+  with `make test TEST_DEVICE='iPhone 17'` if needed.
+- **There is no linter** in this repository — no SwiftLint config, no `make
+  lint`. Match the conventions of the surrounding file instead.
+- The underlying commands, if you must run them directly:
+  ```bash
+  xcodebuild build -scheme KineticTextKit \
+    -destination 'generic/platform=iOS Simulator'
+  xcodebuild test -scheme KineticTextKit \
+    -destination 'platform=iOS Simulator,name=iPhone 17'
+  ```
+  There is no `.xcodeproj` — `xcodebuild` resolves the scheme from
+  `Package.swift`, so no `-project` or `-workspace` flag is needed.
+
+## Project layout
+
+| Path | What's there |
+|---|---|
+| `Sources/KineticTextKit/` | The whole library, flat — one type per file. `KineticTextLayer.swift` is the core; the rest builds on it. `HapticFeedback.swift` is internal (`HapticFeedbackPlaying` / `HapticFeedbackPlayer`), used by the switches. |
+| `Tests/KineticTextKitTests/` | XCTest unit tests. Thin — two tests at present. |
+| `Playground/` | Xcode playground samples. **Not a build target.** See below. |
+| `Package.swift` | One library product, one target, one test target. No dependencies. |
+
+### The Playground
+
+`Playground/` holds hand-run samples of the controls (`ViewController`,
+`PathSwitch`, `SwiftUI`, `UIKit Dynamics`, `Core Animation Sample`, `LAUSwitch`
+pages). Open `Playground/LAUTextLayer.xcworkspace` in Xcode.
+
+**It is exploratory, and it is not expected to keep building.** Nothing gates
+it: `make build` and `make test` do not touch it, and there is no CI. Treat it
+as sample code, not as a target — a change that breaks a playground page is not
+a build failure, and you are not obliged to keep the pages compiling. It is
+worth updating a page when you change the API it demonstrates, but say so in
+the PR rather than letting it silently rot.
+
+Known rot in it already, none of it worth fixing on the way past unless a task
+asks:
+
+- The workspace is still named `LAUTextLayer.xcworkspace`, from before the
+  module was renamed to KineticTextKit.
+- It references a `group:Dependencies` folder that does not exist in the repo,
+  and it has **no schemes** — `xcodebuild -list` on it reports none, so it
+  cannot be driven from the command line at all. Xcode GUI only.
+- `Pages/LAUSwitchWithLabel.xcplaygroundpage` exists on disk but is not listed
+  in `contents.xcplayground`, so Xcode does not show it.
+
+## Conventions
+
+### Branch names
+
+Prefix the branch with the change type (lowercase):
+
+- `fix/<short-slug>`
+- `chore/<short-slug>`
+- `feature/<short-slug>`
+- `refactor/<short-slug>`
+
+### Pull requests
+
+- **Title** is short and matches the originating task title (e.g. the Notion
+  task). Prefix with the change type, capitalized with spaces around the slash:
+  `Fix / …`, `Chore / …`, `Feature / …`, `Refactor / …`.
+- **Description** gives a high-level summary of the code changes, for review
+  reference.
+- **Reference the Notion task**, when there is one, under a `## Task` heading:
+
+  ```
+  closes LM-43 — https://app.notion.com/p/Title-<32-char-id>
+  ```
+
+  The full URL goes in every task PR, partial work included — it is what links
+  the PR to the task. The magic word alone decides completion: `closes` when
+  the task is finished, `ref` when it is not.
+- Open PRs against `main` — this repository's default and integration branch.
+  Keep them focused and reviewable.
+- **Never merge a pull request.**
+
+### Code style
+
+- Match the conventions of the surrounding file — naming, structure, and
+  comment density. There is no linter to fall back on.
+- The `LAU` prefix is historical (the module was `LAUTextLayer` before the
+  rename in #2). Existing type names keep it; new types do not need it.
+
+## Gotchas
+
+- **`main` ships straight to the app. There are no releases.** The repository
+  has no tags, and `lightmate-app-ios` pins it by **branch**, not by version:
+
+  ```json
+  { "identity": "kinetictextkit", "kind": "remoteSourceControl",
+    "location": "https://github.com/laugga/KineticTextKit",
+    "state": { "branch": "main", "revision": "…" } }
+  ```
+
+  So anything merged to `main` reaches the app the next time it resolves
+  packages — there is no version gate in between. Treat every merge as
+  potentially breaking a consumer, and check the app's usage before changing or
+  removing public API. The app records the exact revision in
+  `Lightmate.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`,
+  which is committed there; bumping it is a change in *that* repository.
+- **This repository is public, and it is cloned over HTTPS**, not SSH. Older
+  notes (including the consumer's own `AGENTS.md`, which lists `KineticTextKit`
+  among its private SPM dependencies) say it is private and needs credentialed
+  access. That is out of date: `gh repo view laugga/KineticTextKit` reports
+  `PUBLIC`, and the app resolves it from the `https://` URL above. Nothing
+  special is needed to check it out. Being public also means: no secrets, no
+  customer data, and no internal URLs in this repository.
+- **No CI.** There is no `.github/` directory, no GitHub Actions, and no Xcode
+  Cloud workflow — nothing runs `make build` or `make test` on a pull request.
+  The checks in "Definition of done" below are the only gate, and they only run
+  if you run them.
+- **The deployment target is iOS 12.0** — `Package.swift` declares no
+  `platforms:`, so SwiftPM's default for tools-version 5.7 applies, and builds
+  come out as `arm64-apple-ios12.0-simulator`. Anything newer must be behind
+  `@available`, as `LAULabel` (iOS 14+) already is. If you need a real floor,
+  raise it deliberately in `Package.swift` and check the app's own target
+  first — do not assume.
+- **`.build/` and `.swiftpm/` appear after a build** and are git-ignored.
+  Do not commit them.
+
+## Definition of done
+
+Before opening a PR, confirm:
+
+- [ ] `make build` succeeds
+- [ ] `make test` passes
+- [ ] Public API changes are checked against `lightmate-app-ios` usage — `main`
+      is what the app consumes
+- [ ] Branch and PR title follow the conventions above
+- [ ] No unintended churn (`.build/`, `.swiftpm/`, DerivedData) is committed
