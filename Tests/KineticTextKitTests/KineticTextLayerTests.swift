@@ -7,6 +7,8 @@ final class KineticTextLayerTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        XCTAssertEqual(KineticTextLayer().text, "Hello, World!")
+        let layer = KineticTextLayer()
+        layer.text = "Hello, World!"
+        XCTAssertEqual(layer.text, "Hello, World!")
     }
 }
