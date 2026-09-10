@@ -88,3 +88,6 @@ fastlane/test_output
 # https://github.com/johnno1962/injectionforxcode
 
 iOSInjectionProject/
+
+# Xcode regenerates the example project's workspace state on every build.
+Example/*.xcodeproj/project.xcworkspace/

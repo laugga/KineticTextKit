@@ -64,8 +64,14 @@ Both were verified from a clean checkout of `main`. Notes:
   xcodebuild test -scheme KineticTextKit \
     -destination 'platform=iOS Simulator,name=iPhone 17'
   ```
-  There is no `.xcodeproj` — `xcodebuild` resolves the scheme from
-  `Package.swift`, so no `-project` or `-workspace` flag is needed.
+  The package has no `.xcodeproj` of its own — `xcodebuild` resolves the
+  scheme from `Package.swift`, so no `-project` or `-workspace` flag is needed.
+- **The example app is built separately**, through its own project and the
+  shared `Example` scheme. `make build` and `make test` do not touch it:
+  ```bash
+  xcodebuild build -project Example/KineticTextKit.xcodeproj -scheme Example \
+    -destination 'generic/platform=iOS Simulator'
+  ```
 
 ## Project layout
 
@@ -73,14 +79,52 @@ Both were verified from a clean checkout of `main`. Notes:
 |---|---|
 | `Sources/KineticTextKit/` | The whole library, flat — one type per file. `KineticTextLayer.swift` is the core; the rest builds on it. `HapticFeedback.swift` is internal (`HapticFeedbackPlaying` / `HapticFeedbackPlayer`), used by the switches. |
 | `Tests/KineticTextKitTests/` | XCTest unit tests. Thin — two tests at present. |
+| `Example/` | The example app — `KineticTextKit.xcodeproj` and its sources. See below. |
 | `Playground/` | Xcode playground samples. **Not a build target.** See below. |
 | `Package.swift` | One library product, one target, one test target. No dependencies. |
+
+### The example app
+
+`Example/` is an iOS app whose catalog lists a screen — a *scenario* — for each
+meaningful configuration of each public type, grouped by type. It follows the
+UI component repository example-app pattern, and it consumes the package the
+way any other consumer does: a local Swift package dependency, `import
+KineticTextKit`, public API only.
+
+- **Public API only.** Never `@testable import`, and never widen the package's
+  API to suit the example — if a scenario cannot be written against the public
+  surface, that is worth knowing, not working around.
+- **Naming.** Project, target, product and display name are all
+  `KineticTextKit`; the app's Swift module is `KineticTextKitExample`, so it
+  does not collide with the package module it imports. The shared scheme is
+  `Example`, the same name in every component repository.
+- **Do not remove `PROJECT_TEMP_DIR`** from the project's build settings. The
+  app target and the package target are both called `KineticTextKit`, and by
+  default both put their intermediates in `KineticTextKit.build/…/KineticTextKit.build`.
+  Xcode 26 refuses that with *Multiple commands produce …*; Xcode 27 happens
+  to cope. The setting moves the example's intermediates to
+  `KineticTextKitExample.build`, so both build.
+- **Layout.** `App/` holds the lifecycle, `Catalog/` the index
+  (`Catalog.swift` is the list of every entry), `Scenarios/<Type>/` one file per
+  scenario, `Resources/` the asset catalog. The project uses a synchronised
+  folder, so a new file under `Example/KineticTextKit/` is picked up without
+  editing `project.pbxproj`.
+- **Adding a scenario** is a file under `Scenarios/<Type>/` plus an entry in
+  `Catalog.swift`. Each scenario carries a `#Preview` of itself.
+- **The app is pinned to light appearance.** The components' default colours
+  are black and are set as `CGColor`s, so they do not follow dark mode.
+- **`LAULabel` draws on its top edge.** It never gives its text layer a frame,
+  so the text is laid out against a height of zero. The scenarios show that as
+  it is rather than hiding it.
 
 ### The Playground
 
 `Playground/` holds hand-run samples of the controls (`ViewController`,
 `PathSwitch`, `SwiftUI`, `UIKit Dynamics`, `Core Animation Sample`, `LAUSwitch`
 pages). Open `Playground/LAUTextLayer.xcworkspace` in Xcode.
+
+It is kept alongside `Example/` deliberately, as a separate fast-iteration
+surface — not an example waiting to be migrated into the catalog.
 
 **It is exploratory, and it is not expected to keep building.** Nothing gates
 it: `make build` and `make test` do not touch it, and there is no CI. Treat it
@@ -181,6 +225,8 @@ Before opening a PR, confirm:
 
 - [ ] `make build` succeeds
 - [ ] `make test` passes
+- [ ] The `Example` scheme builds — it is the check that the public API still
+      works for a consumer
 - [ ] Public API changes are checked against `lightmate-app-ios` usage — `main`
       is what the app consumes
 - [ ] Branch and PR title follow the conventions above
