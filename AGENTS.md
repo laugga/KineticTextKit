@@ -17,10 +17,14 @@ weights, plus the UIKit controls built on top of it. Swift + UIKit, packaged
 with Swift Package Manager (`Package.swift`, swift-tools-version 5.7). It has
 **no dependencies of its own**.
 
-**What depends on it:** [`laugga/lightmate-app-ios`](https://github.com/laugga/lightmate-app-ios),
-the Lightmate iOS app, consumes it as a Swift package. See the branch-pinning
-gotcha below — it is the single most important thing to know before merging
-here.
+**What it is for:** the Lightmate app uses it, as a Swift package. That app's
+repository is private, so this file says what the package is for and nothing
+more specific about the app. See the branch-pinning gotcha below — it is the
+single most important thing to know before merging here.
+
+**It is semi-experimental.** Some components do not have a purpose yet — they
+exist ahead of any use. So a component being here says nothing about whether
+the app uses it.
 
 The public surface is small:
 
@@ -185,27 +189,19 @@ Prefix the branch with the change type (lowercase):
 ## Gotchas
 
 - **`main` ships straight to the app. There are no releases.** The repository
-  has no tags, and `lightmate-app-ios` pins it by **branch**, not by version:
-
-  ```json
-  { "identity": "kinetictextkit", "kind": "remoteSourceControl",
-    "location": "https://github.com/laugga/KineticTextKit",
-    "state": { "branch": "main", "revision": "…" } }
-  ```
-
-  So anything merged to `main` reaches the app the next time it resolves
-  packages — there is no version gate in between. Treat every merge as
-  potentially breaking a consumer, and check the app's usage before changing or
-  removing public API. The app records the exact revision in
-  `Lightmate.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`,
-  which is committed there; bumping it is a change in *that* repository.
+  has no tags, and the Lightmate app follows this package's `main` **branch**,
+  not a version. So anything merged to `main` reaches the app the next time it
+  resolves packages — there is no version gate in between. Treat every merge
+  as potentially breaking a consumer, and check the app's usage before changing
+  or removing public API. Moving the app onto a new revision is a change in
+  the app's repository, not this one.
 - **This repository is public, and it is cloned over HTTPS**, not SSH. Older
-  notes (including the consumer's own `AGENTS.md`, which lists `KineticTextKit`
-  among its private SPM dependencies) say it is private and needs credentialed
-  access. That is out of date: `gh repo view laugga/KineticTextKit` reports
-  `PUBLIC`, and the app resolves it from the `https://` URL above. Nothing
-  special is needed to check it out. Being public also means: no secrets, no
-  customer data, and no internal URLs in this repository.
+  notes that call it private and in need of credentialed access are out of
+  date: `gh repo view laugga/KineticTextKit` reports `PUBLIC`. Nothing special
+  is needed to check it out. Being public also means: no secrets, no customer
+  data, no internal URLs — and nothing specific about the private repositories
+  that use it. Saying what the package is for is fine; their paths, files and
+  configuration do not belong here, in code, docs or comments.
 - **No CI.** There is no `.github/` directory, no GitHub Actions, and no Xcode
   Cloud workflow — nothing runs `make build` or `make test` on a pull request.
   The checks in "Definition of done" below are the only gate, and they only run
@@ -227,7 +223,7 @@ Before opening a PR, confirm:
 - [ ] `make test` passes
 - [ ] The `Example` scheme builds — it is the check that the public API still
       works for a consumer
-- [ ] Public API changes are checked against `lightmate-app-ios` usage — `main`
-      is what the app consumes
+- [ ] Public API changes are checked against the Lightmate app's usage —
+      `main` is what the app consumes
 - [ ] Branch and PR title follow the conventions above
 - [ ] No unintended churn (`.build/`, `.swiftpm/`, DerivedData) is committed
