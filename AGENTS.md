@@ -17,10 +17,14 @@ weights, plus the UIKit controls built on top of it. Swift + UIKit, packaged
 with Swift Package Manager (`Package.swift`, swift-tools-version 5.7). It has
 **no dependencies of its own**.
 
-**What depends on it:** [`laugga/lightmate-app-ios`](https://github.com/laugga/lightmate-app-ios),
-the Lightmate iOS app, consumes it as a Swift package. See the branch-pinning
-gotcha below — it is the single most important thing to know before merging
-here.
+**What it is for:** the Lightmate app uses it, as a Swift package. That app's
+repository is private, so this file says what the package is for and nothing
+more specific about the app. See the branch-pinning gotcha below — it is the
+single most important thing to know before merging here.
+
+**It is semi-experimental.** Some components do not have a purpose yet — they
+exist ahead of any use. So a component being here says nothing about whether
+the app uses it.
 
 The public surface is small:
 
@@ -64,8 +68,14 @@ Both were verified from a clean checkout of `main`. Notes:
   xcodebuild test -scheme KineticTextKit \
     -destination 'platform=iOS Simulator,name=iPhone 17'
   ```
-  There is no `.xcodeproj` — `xcodebuild` resolves the scheme from
-  `Package.swift`, so no `-project` or `-workspace` flag is needed.
+  The package has no `.xcodeproj` of its own — `xcodebuild` resolves the
+  scheme from `Package.swift`, so no `-project` or `-workspace` flag is needed.
+- **The example app is built separately**, through its own project and the
+  shared `Example` scheme. `make build` and `make test` do not touch it:
+  ```bash
+  xcodebuild build -project Example/KineticTextKit.xcodeproj -scheme Example \
+    -destination 'generic/platform=iOS Simulator'
+  ```
 
 ## Project layout
 
@@ -73,14 +83,52 @@ Both were verified from a clean checkout of `main`. Notes:
 |---|---|
 | `Sources/KineticTextKit/` | The whole library, flat — one type per file. `KineticTextLayer.swift` is the core; the rest builds on it. `HapticFeedback.swift` is internal (`HapticFeedbackPlaying` / `HapticFeedbackPlayer`), used by the switches. |
 | `Tests/KineticTextKitTests/` | XCTest unit tests. Thin — two tests at present. |
+| `Example/` | The example app — `KineticTextKit.xcodeproj` and its sources. See below. |
 | `Playground/` | Xcode playground samples. **Not a build target.** See below. |
 | `Package.swift` | One library product, one target, one test target. No dependencies. |
+
+### The example app
+
+`Example/` is an iOS app whose catalog lists a screen — a *scenario* — for each
+meaningful configuration of each public type, grouped by type. It follows the
+UI component repository example-app pattern, and it consumes the package the
+way any other consumer does: a local Swift package dependency, `import
+KineticTextKit`, public API only.
+
+- **Public API only.** Never `@testable import`, and never widen the package's
+  API to suit the example — if a scenario cannot be written against the public
+  surface, that is worth knowing, not working around.
+- **Naming.** Project, target, product and display name are all
+  `KineticTextKit`; the app's Swift module is `KineticTextKitExample`, so it
+  does not collide with the package module it imports. The shared scheme is
+  `Example`, the same name in every component repository.
+- **Do not remove `PROJECT_TEMP_DIR`** from the project's build settings. The
+  app target and the package target are both called `KineticTextKit`, and by
+  default both put their intermediates in `KineticTextKit.build/…/KineticTextKit.build`.
+  Xcode 26 refuses that with *Multiple commands produce …*; Xcode 27 happens
+  to cope. The setting moves the example's intermediates to
+  `KineticTextKitExample.build`, so both build.
+- **Layout.** `App/` holds the lifecycle, `Catalog/` the index
+  (`Catalog.swift` is the list of every entry), `Scenarios/<Type>/` one file per
+  scenario, `Resources/` the asset catalog. The project uses a synchronised
+  folder, so a new file under `Example/KineticTextKit/` is picked up without
+  editing `project.pbxproj`.
+- **Adding a scenario** is a file under `Scenarios/<Type>/` plus an entry in
+  `Catalog.swift`. Each scenario carries a `#Preview` of itself.
+- **The app is pinned to light appearance.** The components' default colours
+  are black and are set as `CGColor`s, so they do not follow dark mode.
+- **`LAULabel` draws on its top edge.** It never gives its text layer a frame,
+  so the text is laid out against a height of zero. The scenarios show that as
+  it is rather than hiding it.
 
 ### The Playground
 
 `Playground/` holds hand-run samples of the controls (`ViewController`,
 `PathSwitch`, `SwiftUI`, `UIKit Dynamics`, `Core Animation Sample`, `LAUSwitch`
 pages). Open `Playground/LAUTextLayer.xcworkspace` in Xcode.
+
+It is kept alongside `Example/` deliberately, as a separate fast-iteration
+surface — not an example waiting to be migrated into the catalog.
 
 **It is exploratory, and it is not expected to keep building.** Nothing gates
 it: `make build` and `make test` do not touch it, and there is no CI. Treat it
@@ -141,27 +189,19 @@ Prefix the branch with the change type (lowercase):
 ## Gotchas
 
 - **`main` ships straight to the app. There are no releases.** The repository
-  has no tags, and `lightmate-app-ios` pins it by **branch**, not by version:
-
-  ```json
-  { "identity": "kinetictextkit", "kind": "remoteSourceControl",
-    "location": "https://github.com/laugga/KineticTextKit",
-    "state": { "branch": "main", "revision": "…" } }
-  ```
-
-  So anything merged to `main` reaches the app the next time it resolves
-  packages — there is no version gate in between. Treat every merge as
-  potentially breaking a consumer, and check the app's usage before changing or
-  removing public API. The app records the exact revision in
-  `Lightmate.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`,
-  which is committed there; bumping it is a change in *that* repository.
+  has no tags, and the Lightmate app follows this package's `main` **branch**,
+  not a version. So anything merged to `main` reaches the app the next time it
+  resolves packages — there is no version gate in between. Treat every merge
+  as potentially breaking a consumer, and check the app's usage before changing
+  or removing public API. Moving the app onto a new revision is a change in
+  the app's repository, not this one.
 - **This repository is public, and it is cloned over HTTPS**, not SSH. Older
-  notes (including the consumer's own `AGENTS.md`, which lists `KineticTextKit`
-  among its private SPM dependencies) say it is private and needs credentialed
-  access. That is out of date: `gh repo view laugga/KineticTextKit` reports
-  `PUBLIC`, and the app resolves it from the `https://` URL above. Nothing
-  special is needed to check it out. Being public also means: no secrets, no
-  customer data, and no internal URLs in this repository.
+  notes that call it private and in need of credentialed access are out of
+  date: `gh repo view laugga/KineticTextKit` reports `PUBLIC`. Nothing special
+  is needed to check it out. Being public also means: no secrets, no customer
+  data, no internal URLs — and nothing specific about the private repositories
+  that use it. Saying what the package is for is fine; their paths, files and
+  configuration do not belong here, in code, docs or comments.
 - **No CI.** There is no `.github/` directory, no GitHub Actions, and no Xcode
   Cloud workflow — nothing runs `make build` or `make test` on a pull request.
   The checks in "Definition of done" below are the only gate, and they only run
@@ -181,7 +221,9 @@ Before opening a PR, confirm:
 
 - [ ] `make build` succeeds
 - [ ] `make test` passes
-- [ ] Public API changes are checked against `lightmate-app-ios` usage — `main`
-      is what the app consumes
+- [ ] The `Example` scheme builds — it is the check that the public API still
+      works for a consumer
+- [ ] Public API changes are checked against the Lightmate app's usage —
+      `main` is what the app consumes
 - [ ] Branch and PR title follow the conventions above
 - [ ] No unintended churn (`.build/`, `.swiftpm/`, DerivedData) is committed
