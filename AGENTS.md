@@ -202,10 +202,11 @@ Prefix the branch with the change type (lowercase):
   data, no internal URLs — and nothing specific about the private repositories
   that use it. Saying what the package is for is fine; their paths, files and
   configuration do not belong here, in code, docs or comments.
-- **No CI.** There is no `.github/` directory, no GitHub Actions, and no Xcode
-  Cloud workflow — nothing runs `make build` or `make test` on a pull request.
-  The checks in "Definition of done" below are the only gate, and they only run
-  if you run them.
+- **CI gates the merge.** `.github/workflows/ci.yml` runs `make build` and
+  `make test` on `macos-latest` for every pull request into `main`, and a human
+  cannot merge without it passing. Xcode Cloud isn't an option here: it needs
+  an app or framework target in an Xcode project, and this SwiftPM package has
+  neither.
 - **The deployment target is iOS 12.0** — `Package.swift` declares no
   `platforms:`, so SwiftPM's default for tools-version 5.7 applies, and builds
   come out as `arm64-apple-ios12.0-simulator`. Anything newer must be behind
