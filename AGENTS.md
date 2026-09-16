@@ -77,13 +77,49 @@ Both were verified from a clean checkout of `main`. Notes:
     -destination 'generic/platform=iOS Simulator'
   ```
 
+## Try it
+
+The Example app has a root `deploy`, so opening a pull request or pushing to
+one builds, archives and uploads it to Firebase App Distribution — the same
+contract every UI-surface repository follows (`CONVENTIONS.md` → *UI surfaces
+only*).
+
+```bash
+make deploy   # delegates to $(MAKE) -C Example deploy
+```
+
+- **Configuration** — `Example/Makefile` names the destination directly as
+  `FIREBASE_PROJECT`/`FIREBASE_APP`/`FIREBASE_GROUPS`: project
+  `lightmate-development-390f6` ("Lightmate Development"), app
+  `com.laugga.KineticTextKit`. The Example app links no Firebase SDK, so
+  there is no `GoogleService-Info.plist` to read these from instead — see the
+  gotchas.
+- **Build and signing** — Debug configuration, automatic signing, team
+  `JJC3QT2D2L`. `Example/Support/ExportOptions.plist` exports with
+  `method = debugging`, so only devices registered in that Apple team can
+  install the build.
+- **Version** — `Example/Scripts/Version/version.sh`, vendored unchanged from
+  `laugga/ops`'s `share/version/` (`CONVENTIONS.md` → *Versioning*).
+  `make -C Example deploy` refuses a dirty tree or unpushed commits before
+  archiving.
+- **Goes to** — Firebase App Distribution, group `internal`. The group and
+  the machine's Firebase CLI login are host setup; `deploy` never creates
+  either.
+- **One-time setup** — the machine running `deploy` must be signed in to
+  Apple team `JJC3QT2D2L` in Xcode, and to the Firebase CLI
+  (`firebase login`). A new tester's device is registered in that Apple team
+  by hand before it can install a build.
+- **What it prints** — a tester install link, which goes in this section of
+  the pull request description, replaced wholesale on the next build rather
+  than appended.
+
 ## Project layout
 
 | Path | What's there |
 |---|---|
 | `Sources/KineticTextKit/` | The whole library, flat — one type per file. `KineticTextLayer.swift` is the core; the rest builds on it. `HapticFeedback.swift` is internal (`HapticFeedbackPlaying` / `HapticFeedbackPlayer`), used by the switches. |
 | `Tests/KineticTextKitTests/` | XCTest unit tests. Thin — two tests at present. |
-| `Example/` | The example app — `KineticTextKit.xcodeproj` and its sources. See below. |
+| `Example/` | The example app — `KineticTextKit.xcodeproj`, its sources, and its own `Makefile` (`build`, `test`, `archive`, `deploy`). See below, and "Try it" above. |
 | `Playground/` | Xcode playground samples. **Not a build target.** See below. |
 | `Package.swift` | One library product, one target, one test target. No dependencies. |
 
@@ -188,6 +224,14 @@ Prefix the branch with the change type (lowercase):
 
 ## Gotchas
 
+- **The Example app's Firebase identity is two literal values, not a config
+  file.** `Example/Makefile`'s `FIREBASE_PROJECT`/`FIREBASE_APP` name the
+  Firebase App Distribution destination directly. There is deliberately no
+  `GoogleService-Info.plist`: the Example app links no Firebase SDK, so
+  vendoring the full Google-issued file — API key and all — would commit a
+  project-wide credential this public repository has no functional use for.
+  If the Example app ever does link the Firebase SDK for something real,
+  that's the point to add the plist and switch the Makefile to read from it.
 - **`main` ships straight to the app. There are no releases.** The repository
   has no tags, and the Lightmate app follows this package's `main` **branch**,
   not a version. So anything merged to `main` reaches the app the next time it
