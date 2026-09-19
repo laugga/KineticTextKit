@@ -13,9 +13,39 @@ import SwiftUI
 /// The sections are the kit's public types rather than the categories the
 /// pattern suggests: each type is a separate thing a consumer reaches for, and a
 /// reviewer arrives here knowing which one they came to look at.
+///
+/// `KineticTextLayer` is listed first because it is the type the others are
+/// built on.
 enum Catalog {
 
     static let sections: [CatalogSection] = [
+
+        CatalogSection(title: "KineticTextLayer", scenarios: [
+            CatalogScenario(
+                title: "Default",
+                description: "The layer added straight to a plain UIView's layer — text, font and textColor, no wrapper."
+            ) {
+                TextLayerDefaultScenarioViewController()
+            },
+            CatalogScenario(
+                title: "Frame Before Content",
+                description: "The same text set before and after the layer has a frame, one above the other."
+            ) {
+                TextLayerFrameOrderScenarioViewController()
+            },
+            CatalogScenario(
+                title: "Frame Changes",
+                description: "Resizing the canvas, with the contentMode re-apply that keeps the text laid out switchable."
+            ) {
+                TextLayerFrameChangeScenarioViewController()
+            },
+            CatalogScenario(
+                title: "Font Animation",
+                description: "setFont(_:animated:) on the bare layer, which is where the morph lives."
+            ) {
+                TextLayerFontAnimationScenarioViewController()
+            }
+        ]),
 
         CatalogSection(title: "LAUTextView", scenarios: [
             CatalogScenario(
