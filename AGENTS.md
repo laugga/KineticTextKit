@@ -156,6 +156,13 @@ KineticTextKit`, public API only.
 - **`LAULabel` draws on its top edge.** It never gives its text layer a frame,
   so the text is laid out against a height of zero. The scenarios show that as
   it is rather than hiding it.
+- **The `KineticTextLayer` scenarios do the frame work in the open.** The layer
+  lays its path out against its own frame at the moment `text`, `font` or
+  `contentMode` is set, and a `CALayer` does not resize with the view it was
+  added to — so a consumer sets the frame before the content and sets the
+  content again when the frame changes. Those screens each carry that in their
+  own `viewDidLayoutSubviews`, deliberately, rather than behind a shared helper
+  the way `TextViewStage` does it for the `LAUTextView` section.
 
 ### The Playground
 
