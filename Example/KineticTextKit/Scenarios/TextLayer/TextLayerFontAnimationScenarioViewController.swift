@@ -14,7 +14,7 @@ import KineticTextKit
 /// new one.
 final class TextLayerFontAnimationScenarioViewController: ScenarioViewController {
 
-    private let canvas = UIView()
+    private let canvas = LayoutReportingView()
 
     private let textLayer = KineticTextLayer()
 
@@ -36,6 +36,9 @@ final class TextLayerFontAnimationScenarioViewController: ScenarioViewController
         canvas.layer.borderWidth = 1
         canvas.layer.borderColor = UIColor.separator.cgColor
         canvas.layer.addSublayer(textLayer)
+        canvas.didLayout = { [weak self] in
+            self?.layOutTextLayer()
+        }
 
         add(canvas, height: 160)
 
@@ -62,9 +65,10 @@ final class TextLayerFontAnimationScenarioViewController: ScenarioViewController
         add(animatedRow)
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
+    /// The same frame work as the other scenarios in this section: the layer
+    /// does not resize with the canvas, and the path is only laid out again
+    /// when the content is set again.
+    private func layOutTextLayer() {
         guard textLayer.frame != canvas.bounds else {
             return
         }

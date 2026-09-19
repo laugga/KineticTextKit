@@ -14,11 +14,11 @@ import KineticTextKit
 /// they differ only in the order, and the top one never recovers.
 final class TextLayerFrameOrderScenarioViewController: ScenarioViewController {
 
-    private let contentFirstCanvas = UIView()
+    private let contentFirstCanvas = LayoutReportingView()
 
     private let contentFirstLayer = KineticTextLayer()
 
-    private let frameFirstCanvas = UIView()
+    private let frameFirstCanvas = LayoutReportingView()
 
     private let frameFirstLayer = KineticTextLayer()
 
@@ -30,43 +30,56 @@ final class TextLayerFrameOrderScenarioViewController: ScenarioViewController {
         addNote("The same layer, the same text, the same font, the same frame. The only difference is the order.")
 
         outline(contentFirstCanvas, hosting: contentFirstLayer)
+        contentFirstCanvas.didLayout = { [weak self] in
+            guard let self else { return }
+
+            // The frame arrives, but the content is never set again — so the
+            // path keeps the layout it was given when there was no height.
+            self.setFrame(of: self.contentFirstLayer, to: self.contentFirstCanvas.bounds)
+        }
+
         add(contentFirstCanvas, height: 96)
-        add(makeValueLabel("Content first — set here in viewDidLoad, while the layer's frame is still .zero. The path was laid out for a height of zero, so .center centres it on the top edge, and nothing lays it out again."))
+        add(makeValueLabel("Content first — set in viewDidLoad, while the layer's frame is still .zero. The path was laid out for a height of zero, so .center centres it on the top edge, and nothing lays it out again."))
 
         outline(frameFirstCanvas, hosting: frameFirstLayer)
+        frameFirstCanvas.didLayout = { [weak self] in
+            guard let self else { return }
+
+            self.setFrame(of: self.frameFirstLayer, to: self.frameFirstCanvas.bounds)
+
+            // Only now, with a frame to be laid out against, is the content set.
+            if !self.hasSetFrameFirstContent, !self.frameFirstCanvas.bounds.isEmpty {
+                self.hasSetFrameFirstContent = true
+                self.configure(self.frameFirstLayer)
+            }
+        }
+
         add(frameFirstCanvas, height: 96)
-        add(makeValueLabel("Frame first — the content is set in viewDidLayoutSubviews, once the canvas has bounds and the layer has been given them. Centred, as asked for."))
+        add(makeValueLabel("Frame first — the content is set from the canvas's layout pass, once it has bounds and the layer has been given them. Centred, as asked for."))
 
         configure(contentFirstLayer)
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
-        // Both layers are given their frame here, because a CALayer added to a
-        // view's layer does not resize with it. Only the second has its content
-        // set afterwards, and neither is ever re-applied — so each one keeps
-        // showing the order it was set in.
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-
-        contentFirstLayer.frame = contentFirstCanvas.bounds
-        frameFirstLayer.frame = frameFirstCanvas.bounds
-
-        if !hasSetFrameFirstContent, !frameFirstCanvas.bounds.isEmpty {
-            hasSetFrameFirstContent = true
-            configure(frameFirstLayer)
-        }
-
-        CATransaction.commit()
-    }
-
-    /// Border and superlayer only — the frame work stays in the layout pass,
-    /// where it can be read.
+    /// Border and superlayer only — the frame work stays in the layout
+    /// closures above, where it can be read.
     private func outline(_ canvas: UIView, hosting textLayer: KineticTextLayer) {
         canvas.layer.borderWidth = 1
         canvas.layer.borderColor = UIColor.separator.cgColor
         canvas.layer.addSublayer(textLayer)
+    }
+
+    /// A `CALayer` added to a view's layer does not resize with it, so both
+    /// layers are given their frame by hand. On its own this moves the layer
+    /// and leaves the path where it was.
+    private func setFrame(of textLayer: KineticTextLayer, to bounds: CGRect) {
+        guard textLayer.frame != bounds else {
+            return
+        }
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        textLayer.frame = bounds
+        CATransaction.commit()
     }
 
     private func configure(_ textLayer: KineticTextLayer) {

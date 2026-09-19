@@ -13,13 +13,14 @@ import KineticTextKit
 /// There is no `LAUTextView` here, so nothing keeps the layer's frame up to
 /// date. The layer lays its path out against its own frame at the moment the
 /// content is set, and a `CALayer` does not resize with the view it was added
-/// to, so `viewDidLayoutSubviews` below is work a consumer writes for
-/// themselves. It is spelled out rather than hidden in a helper because it is
-/// the subject of this section.
+/// to, so `layOutTextLayer()` below is work a consumer writes for themselves.
+/// It is spelled out rather than hidden in a helper because it is the subject
+/// of this section.
 final class TextLayerDefaultScenarioViewController: ScenarioViewController {
 
-    /// A plain `UIView` — nothing from the kit. Its `layer` is the superlayer.
-    private let canvas = UIView()
+    /// A plain `UIView` — nothing from the kit. Its `layer` is the superlayer,
+    /// and its layout pass is what the scenario hangs the frame work on.
+    private let canvas = LayoutReportingView()
 
     private let textLayer = KineticTextLayer()
 
@@ -31,6 +32,9 @@ final class TextLayerDefaultScenarioViewController: ScenarioViewController {
         canvas.layer.borderWidth = 1
         canvas.layer.borderColor = UIColor.separator.cgColor
         canvas.layer.addSublayer(textLayer)
+        canvas.didLayout = { [weak self] in
+            self?.layOutTextLayer()
+        }
 
         add(canvas, height: 120)
 
@@ -41,19 +45,17 @@ final class TextLayerDefaultScenarioViewController: ScenarioViewController {
         textLayer.textColor = .label
         textLayer.text = "2.8"
 
-        addNote("Rotate the device, or open the scenario on a different size class: viewDidLayoutSubviews re-applies contentMode so the path is laid out again against the new frame.")
+        addNote("Rotate the device: the canvas lays out again, and the layer is given the new frame and asked to lay its path out against it.")
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
+    /// The two steps, both needed: the frame, because the layer does not follow
+    /// its superlayer, and then a re-applied `contentMode`, because that is what
+    /// lays the path out again against the frame the layer now has.
+    private func layOutTextLayer() {
         guard textLayer.frame != canvas.bounds else {
             return
         }
 
-        // Two steps, both needed: the frame, because the layer does not follow
-        // its superlayer, and then a re-applied `contentMode`, because that is
-        // what lays the path out again against the frame the layer now has.
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         textLayer.frame = canvas.bounds

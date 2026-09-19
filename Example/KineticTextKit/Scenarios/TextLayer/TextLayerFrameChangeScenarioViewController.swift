@@ -16,7 +16,7 @@ import KineticTextKit
 /// something the reviewer can watch rather than take on trust.
 final class TextLayerFrameChangeScenarioViewController: ScenarioViewController {
 
-    private let canvas = UIView()
+    private let canvas = LayoutReportingView()
 
     private let textLayer = KineticTextLayer()
 
@@ -44,6 +44,9 @@ final class TextLayerFrameChangeScenarioViewController: ScenarioViewController {
         canvas.layer.borderWidth = 1
         canvas.layer.borderColor = UIColor.separator.cgColor
         canvas.layer.addSublayer(textLayer)
+        canvas.didLayout = { [weak self] in
+            self?.layOutTextLayer()
+        }
 
         add(canvas)
         canvasHeight.isActive = true
@@ -70,9 +73,10 @@ final class TextLayerFrameChangeScenarioViewController: ScenarioViewController {
         add(modeControl)
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
+    /// The layer is given the canvas's new bounds every layout pass. That
+    /// moves it; it does not lay the path out again. The switch decides whether
+    /// the one line that does is run.
+    private func layOutTextLayer() {
         guard textLayer.frame != canvas.bounds else {
             return
         }

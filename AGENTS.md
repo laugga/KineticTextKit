@@ -160,9 +160,16 @@ KineticTextKit`, public API only.
   lays its path out against its own frame at the moment `text`, `font` or
   `contentMode` is set, and a `CALayer` does not resize with the view it was
   added to — so a consumer sets the frame before the content and sets the
-  content again when the frame changes. Those screens each carry that in their
-  own `viewDidLayoutSubviews`, deliberately, rather than behind a shared helper
-  the way `TextViewStage` does it for the `LAUTextView` section.
+  content again when the frame changes. Those screens each write that out
+  themselves, deliberately, rather than behind a shared helper the way
+  `TextViewStage` does it for the `LAUTextView` section.
+- **A scenario's frame work belongs in a view's `layoutSubviews`, not the view
+  controller's `viewDidLayoutSubviews`.** `viewDidLayoutSubviews` runs before
+  `ScenarioViewController`'s stack view has sized what it arranges, so a canvas
+  read there still has zero bounds — and a text layer laid out against that
+  never recovers, because nothing asks it again. `LayoutReportingView` exists
+  only to hand that moment back to the scenario; it decides nothing about the
+  layer.
 
 ### The Playground
 
